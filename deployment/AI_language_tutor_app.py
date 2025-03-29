@@ -63,9 +63,7 @@ if st.sidebar.button("Download Conversation (Excel)"):
     )
 
 if st.sidebar.button("Download Conversation (Text)"):
-    text_history = "
-".join([f"You: {entry['user']}
-AI: {entry['ai']}" for entry in st.session_state.conversation])
+    text_history = "\n".join([f"You: {entry['user']}\nAI: {entry['ai']}" for entry in st.session_state.conversation])
     st.sidebar.download_button(
         label="📥 Download Text File",
         data=text_history,
