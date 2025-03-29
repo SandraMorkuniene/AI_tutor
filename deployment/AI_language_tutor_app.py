@@ -19,17 +19,16 @@ def initialize_langchain(language):
     """
 
     # Create a memory buffer for storing the conversation history
-    memory = ConversationBufferMemory(memory_key="messages")
+    memory = ConversationBufferMemory(memory_key="messages", return_messages=True)
 
     # Initialize the OpenAI model via LangChain
     chat_model = ChatOpenAI(model="gpt-4", temperature=0.7)
     
-    # Create the conversation chain
+    # Create the conversation chain with memory
     conversation_chain = ConversationChain(
         llm=chat_model,
         memory=memory,
-        verbose=True,
-        prompt=PromptTemplate.from_template(prompt_template)
+        verbose=True
     )
     
     return conversation_chain, memory
@@ -69,7 +68,7 @@ if user_input:
     # Add user message to conversation history
     st.session_state.messages.append({"role": "user", "content": user_input})
 
-    # Generate response using LangChain (with conversation context)
+    # Run the conversation chain with the input
     ai_response = conversation_chain.run(user_input)
     
     # Add AI response to conversation history
@@ -90,4 +89,3 @@ if st.session_state.messages:
     # Provide download as Excel
     excel_content = save_conversation_to_excel(st.session_state.messages)
     st.sidebar.download_button("Download as Excel File", excel_content.to_csv(index=False), file_name="conversation.csv")
-
