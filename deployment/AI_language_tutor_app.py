@@ -5,7 +5,8 @@ import pandas as pd
 import io
 
 # Set OpenAI API Key
-openai.api_key = "your_openai_api_key"
+openai.api_key = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 
 # Title and language selection
 st.title("🌍 AI Language Learning App")
