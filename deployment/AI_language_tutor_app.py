@@ -1,32 +1,40 @@
-
 import os
 import openai
 import streamlit as st
 import pandas as pd
+from langchain.prompts import PromptTemplate
+from langchain.chat_models import ChatOpenAI
+from langchain.chains import ConversationChain
+from langchain.memory import ConversationBufferMemory
 
 # Set OpenAI API Key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Function to handle conversation with the model
-def chat_with_model(messages):
-    response = openai.Completion.create(
-        model="gpt-4",  # You can also use "gpt-3.5-turbo"
-        prompt=generate_prompt(messages),
-        max_tokens=150
+# Initialize LangChain components
+def initialize_langchain(language):
+    # Define the prompt template based on selected language
+    prompt_template = f"""
+    You are a native speaker of {language}. 
+    Engage in conversation with the user, correct their mistakes, and provide explanations for improvements.
+    """
+
+    # Create a memory buffer for storing the conversation history
+    memory = ConversationBufferMemory(memory_key="messages")
+
+    # Initialize the OpenAI model via LangChain
+    chat_model = ChatOpenAI(model="gpt-4", temperature=0.7)
+    
+    # Create the conversation chain
+    conversation_chain = ConversationChain(
+        llm=chat_model,
+        memory=memory,
+        verbose=True,
+        prompt=PromptTemplate.from_template(prompt_template)
     )
-    return response.choices[0].text.strip()
+    
+    return conversation_chain, memory
 
-# Function to generate the prompt
-def generate_prompt(messages):
-    prompt = ""
-    for message in messages:
-        role = message["role"]
-        content = message["content"]
-        prompt += f"{role.capitalize()}: {content}\n"
-    prompt += "Assistant: "
-    return prompt
-
-# Function to save conversation history as a text file
+# Function to save conversation to a text file
 def save_conversation_to_text(messages):
     text_content = ""
     for message in messages:
@@ -35,7 +43,7 @@ def save_conversation_to_text(messages):
         text_content += f"{role.capitalize()}: {content}\n"
     return text_content
 
-# Function to save conversation history as an Excel file
+# Function to save conversation to an Excel file
 def save_conversation_to_excel(messages):
     df = pd.DataFrame(messages)
     return df
@@ -46,23 +54,24 @@ st.title("Language Learning App: French / Italian")
 # Language selection
 language = st.radio("Select a language:", ("French", "Italian"))
 
+# Initialize LangChain conversation chain
+conversation_chain, memory = initialize_langchain(language)
+
 # User input text box
 user_input = st.text_area(f"Enter your message in {language}:")
 
 # Initialize session state for storing conversation history
 if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "system", "content": f"You are a native speaker of {language}."}
-    ]
+    st.session_state.messages = []
 
 # Handle user input and AI response
 if user_input:
     # Add user message to conversation history
     st.session_state.messages.append({"role": "user", "content": user_input})
 
-    # Generate response from the model
-    ai_response = chat_with_model(st.session_state.messages)
-
+    # Generate response using LangChain (with conversation context)
+    ai_response = conversation_chain.run(user_input)
+    
     # Add AI response to conversation history
     st.session_state.messages.append({"role": "assistant", "content": ai_response})
 
@@ -81,3 +90,4 @@ if st.session_state.messages:
     # Provide download as Excel
     excel_content = save_conversation_to_excel(st.session_state.messages)
     st.sidebar.download_button("Download as Excel File", excel_content.to_csv(index=False), file_name="conversation.csv")
+
