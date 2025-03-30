@@ -5,7 +5,7 @@ import io
 import os
 
 # Set OpenAI API Key
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 # Title and language selection
 st.title("🌍 AI Language Learning App")
@@ -31,7 +31,7 @@ if st.button("Submit"):
         messages.append({"role": "user", "content": user_input})
         
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-4o",
             messages=messages
         )
         
