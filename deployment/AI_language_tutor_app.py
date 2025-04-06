@@ -3,6 +3,7 @@ import openai
 import pandas as pd
 import io
 import os
+from openai import OpenAI
 
 # Initialize OpenAI client using Streamlit secrets
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
