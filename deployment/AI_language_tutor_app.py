@@ -5,11 +5,8 @@ import io
 import os
 from gtts import gTTS
 from openai import OpenAI
-from audiorecorder import audiorecorder
-from pydub import AudioSegment
 import logging
-import numpy as np
-from scipy.io.wavfile import write as write_wav
+
 
 # Initialize OpenAI client
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
@@ -32,34 +29,21 @@ st.subheader(f"✍️ Practice {lang}")
 
 
 st.subheader("🎤 Optional: Speak Instead of Typing")
-audio = audiorecorder("🎙️ Start recording", "⏹️ Stop recording")
+audio_file = st.audio_input("🎤 Speak now")
 
-if len(audio) > 0:
-    st.write("DEBUG: audio type ->", type(audio))
+if audio_file is not None:
+    st.audio(audio_file)
 
-    # audio is a NumPy array of float samples in range [-1.0, 1.0]
-    # Convert to int16 format for WAV encoding
-    audio_data = np.array(audio)
-    audio_int16 = (audio_data * 32767).astype(np.int16)
-
-    wav_bytes = io.BytesIO()
-    write_wav(wav_bytes, 44100, audio_int16)  # 44.1 kHz sample rate
-    wav_bytes.seek(0)
-
-    # Playback for user
-    st.audio(wav_bytes, format="audio/wav")
-
-    # Whisper STT
+    # Send to Whisper
     transcription = client.audio.transcriptions.create(
         model="whisper-1",
-        file=("audio.wav", wav_bytes, "audio/wav"),
+        file=audio_file,
         language=lang[:2].lower()
     )
 
     spoken_text = transcription.text.strip()
     st.success(f"🗣 Recognized Speech: {spoken_text}")
 
-    # Auto-fill input box
     st.session_state["lang_input"] = spoken_text
 
 
