@@ -117,6 +117,40 @@ if st.sidebar.button("Download Conversation (Text)"):
         file_name="conversation_history.txt",
         mime="text/plain"
     )
+# === DOWNLOAD HELPER NOTES === #
+st.sidebar.subheader("📥 Download Helper Notes")
+
+# Download Helper Q&A (Excel)
+if st.sidebar.button("Download Helper Notes (Excel)"):
+    if len(st.session_state.helper_conversation) == 0:
+        st.sidebar.warning("No helper notes to export yet.")
+    else:
+        helper_df = pd.DataFrame(st.session_state.helper_conversation)
+        towrite = io.BytesIO()
+        helper_df.to_excel(towrite, index=False, sheet_name="Helper Notes")
+        towrite.seek(0)
+        st.sidebar.download_button(
+            label="📘 Download Helper Notes Excel",
+            data=totime,
+            file_name="helper_notes.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+# Download Helper Q&A (Text)
+if st.sidebar.button("Download Helper Notes (Text)"):
+    if len(st.session_state.helper_conversation) == 0:
+        st.sidebar.warning("No helper notes to export yet.")
+    else:
+        helper_text = "\n\n".join(
+            [f"Question: {entry['user']}\nAnswer: {entry['ai']}" 
+            for entry in st.session_state.helper_conversation]
+        )
+        st.sidebar.download_button(
+            label="📄 Download Helper Notes Text",
+            data=helper_text,
+            file_name="helper_notes.txt",
+            mime="text/plain"
+        )
 
 # === CLEAR CONVERSATION === #
 if st.sidebar.button("🧹 Clear All Conversations"):
