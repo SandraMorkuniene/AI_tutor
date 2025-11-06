@@ -6,6 +6,7 @@ import os
 from gtts import gTTS
 from openai import OpenAI
 from audiorecorder import audiorecorder
+from pydub import AudioSegment
 
 # Initialize OpenAI client
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
@@ -24,35 +25,38 @@ if "conversation" not in st.session_state:
 if "helper_conversation" not in st.session_state:
     st.session_state.helper_conversation = []
 
+st.subheader(f"✍️ Practice {lang}")
+
 
 st.subheader("🎤 Optional: Speak Instead of Typing")
 
-audio = audiorecorder("Start recording", "Stop recording")
+audio = audiorecorder("🎙️ Start recording", "⏹️ Stop recording")
 
 if len(audio) > 0:
-    # Save recorded audio
-    audio_path = "user_audio.wav"
-    audio.export(audio_path, format="wav")
+    # Convert recording to WAV in memory (no temp file needed)
+    wav_bytes = io.BytesIO()
+    audio.export(wav_bytes, format="wav")
+    wav_bytes.seek(0)
 
-    # Show playback
-    st.audio(audio_path)
+    # Playback in Streamlit
+    st.audio(wav_bytes, format="audio/wav")
 
-    # Send to OpenAI Whisper STT
-    with open(audio_path, "rb") as f:
-        transcription = client.audio.transcriptions.create(
-            model="whisper-1",
-            file=f,
-            language=lang[:2].lower()  # Auto-align with language selection
-        )
+    # Send to Whisper STT
+    transcription = client.audio.transcriptions.create(
+        model="whisper-1",
+        file=("audio.wav", wav_bytes, "audio/wav"),  # <-- required format
+        language=lang[:2].lower()
+    )
 
     spoken_text = transcription.text
-    st.success(f"Recognized Speech: {spoken_text}")
+    st.success(f"🗣 Recognized Speech: {spoken_text}")
 
-    # Automatically insert recognized text into the input box
+    # Fill input box automatically
     st.session_state["lang_input"] = spoken_text
 
+
 # === MAIN LANGUAGE PRACTICE === #
-st.subheader(f"✍️ Practice {lang}")
+#st.subheader(f"✍️ Practice {lang}")
 user_input = st.text_area(f"Write something in {lang} (AI will correct and respond):", key="lang_input")
 
 if st.button("Submit", key="lang_submit"):
