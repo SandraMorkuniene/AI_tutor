@@ -28,74 +28,41 @@ if "helper_conversation" not in st.session_state:
 
 st.subheader(f"✍️ Practice {lang}")
 
+from audiorecorder import audiorecorder
+import numpy as np
+import io
+from scipy.io.wavfile import write as write_wav
+
 st.subheader("🎤 Optional: Speak Instead of Typing")
 audio = audiorecorder("🎙️ Start recording", "⏹️ Stop recording")
 
 if len(audio) > 0:
-    # Debug info (visible in app and in logs)
-    st.write("DEBUG: audio object type:", type(audio))
-    logging.info(f"DEBUG: audio object type: {type(audio)}")
-    wav_bytes = None
+    st.write("DEBUG: audio type ->", type(audio))
 
-    # 1) If recorder returns raw bytes
-    if isinstance(audio, (bytes, bytearray)):
-        wav_bytes = io.BytesIO(audio)
+    # audio is a NumPy array of float samples in range [-1.0, 1.0]
+    # Convert to int16 format for WAV encoding
+    audio_data = np.array(audio)
+    audio_int16 = (audio_data * 32767).astype(np.int16)
 
-    # 2) If recorder returns a file-like object (has read)
-    elif hasattr(audio, "read") and callable(getattr(audio, "read")):
-        # Some versions return a file-like object; read it into BytesIO
-        try:
-            data = audio.read()
-            wav_bytes = io.BytesIO(data)
-        except Exception as e:
-            logging.exception("Failed reading file-like audio object")
+    wav_bytes = io.BytesIO()
+    write_wav(wav_bytes, 44100, audio_int16)  # 44.1 kHz sample rate
+    wav_bytes.seek(0)
 
-    # 3) If recorder returns a pydub.AudioSegment (has export method)
-    elif hasattr(audio, "export") and callable(getattr(audio, "export")):
-        try:
-            wav_bytes = io.BytesIO()
-            # export into in-memory buffer as WAV
-            audio.export(wav_bytes, format="wav")
-            wav_bytes.seek(0)
-        except Exception as e:
-            logging.exception("Failed exporting pydub AudioSegment")
+    # Playback for user
+    st.audio(wav_bytes, format="audio/wav")
 
-    # 4) Last-resort: try to coerce iterables (list of ints/bytes) into bytes
-    else:
-        try:
-            wav_bytes = io.BytesIO(bytes(audio))
-        except Exception:
-            logging.exception("Unsupported audio type; cannot coerce to bytes")
-            st.error("Unsupported audio object returned by audiorecorder. Check logs for details.")
-            wav_bytes = None
+    # Whisper STT
+    transcription = client.audio.transcriptions.create(
+        model="whisper-1",
+        file=("audio.wav", wav_bytes, "audio/wav"),
+        language=lang[:2].lower()
+    )
 
-    if wav_bytes is None:
-        st.error("Could not process recording. See app logs for debugging details.")
-    else:
-        # Playback for user
-        wav_bytes.seek(0)
-        st.audio(wav_bytes, format="audio/wav")
+    spoken_text = transcription.text.strip()
+    st.success(f"🗣 Recognized Speech: {spoken_text}")
 
-        # Prepare file tuple for OpenAI Whisper (filename, fileobj, mime)
-        wav_bytes.seek(0)
-        file_tuple = ("audio.wav", wav_bytes, "audio/wav")
-
-        # Call Whisper (OpenAI client - adjust if your client API differs)
-        try:
-            transcription = client.audio.transcriptions.create(
-                model="whisper-1",
-                file=file_tuple,
-                language=lang[:2].lower()
-            )
-            spoken_text = transcription.text
-            st.success(f"🗣 Recognized Speech: {spoken_text}")
-
-            # auto-fill the text area
-            st.session_state["lang_input"] = spoken_text
-
-        except Exception as e:
-            logging.exception("Whisper transcription failed")
-            st.error("Speech-to-text failed. Check logs for details.")
+    # Auto-fill input box
+    st.session_state["lang_input"] = spoken_text
 
 
 
