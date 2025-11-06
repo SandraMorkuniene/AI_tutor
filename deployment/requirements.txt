@@ -17,3 +17,4 @@ langcodes==3.5.0
 openpyxl==3.1.5
 gtts==2.5.4
 streamlit-audiorecorder==0.0.2
+pydub==0.25.1
