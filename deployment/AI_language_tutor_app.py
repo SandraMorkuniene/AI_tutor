@@ -5,6 +5,7 @@ import io
 import os
 from gtts import gTTS
 from openai import OpenAI
+from audiorecorder import audiorecorder
 
 # Initialize OpenAI client
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
@@ -22,6 +23,33 @@ if "conversation" not in st.session_state:
     st.session_state.conversation = []
 if "helper_conversation" not in st.session_state:
     st.session_state.helper_conversation = []
+
+
+st.subheader("🎤 Optional: Speak Instead of Typing")
+
+audio = audiorecorder("Start recording", "Stop recording")
+
+if len(audio) > 0:
+    # Save recorded audio
+    audio_path = "user_audio.wav"
+    audio.export(audio_path, format="wav")
+
+    # Show playback
+    st.audio(audio_path)
+
+    # Send to OpenAI Whisper STT
+    with open(audio_path, "rb") as f:
+        transcription = client.audio.transcriptions.create(
+            model="whisper-1",
+            file=f,
+            language=lang[:2].lower()  # Auto-align with language selection
+        )
+
+    spoken_text = transcription.text
+    st.success(f"Recognized Speech: {spoken_text}")
+
+    # Automatically insert recognized text into the input box
+    st.session_state["lang_input"] = spoken_text
 
 # === MAIN LANGUAGE PRACTICE === #
 st.subheader(f"✍️ Practice {lang}")
