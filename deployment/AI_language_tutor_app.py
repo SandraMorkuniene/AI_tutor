@@ -7,6 +7,7 @@ from gtts import gTTS
 from openai import OpenAI
 from audiorecorder import audiorecorder
 from pydub import AudioSegment
+import logging
 
 # Initialize OpenAI client
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
@@ -27,32 +28,75 @@ if "helper_conversation" not in st.session_state:
 
 st.subheader(f"✍️ Practice {lang}")
 
-
 st.subheader("🎤 Optional: Speak Instead of Typing")
-
 audio = audiorecorder("🎙️ Start recording", "⏹️ Stop recording")
 
 if len(audio) > 0:
-    # Convert recording to WAV in memory (no temp file needed)
-    wav_bytes = io.BytesIO()
-    audio.export(wav_bytes, format="wav")
-    wav_bytes.seek(0)
+    # Debug info (visible in app and in logs)
+    st.write("DEBUG: audio object type:", type(audio))
+    logging.info(f"DEBUG: audio object type: {type(audio)}")
+    wav_bytes = None
 
-    # Playback in Streamlit
-    st.audio(wav_bytes, format="audio/wav")
+    # 1) If recorder returns raw bytes
+    if isinstance(audio, (bytes, bytearray)):
+        wav_bytes = io.BytesIO(audio)
 
-    # Send to Whisper STT
-    transcription = client.audio.transcriptions.create(
-        model="whisper-1",
-        file=("audio.wav", wav_bytes, "audio/wav"),  # <-- required format
-        language=lang[:2].lower()
-    )
+    # 2) If recorder returns a file-like object (has read)
+    elif hasattr(audio, "read") and callable(getattr(audio, "read")):
+        # Some versions return a file-like object; read it into BytesIO
+        try:
+            data = audio.read()
+            wav_bytes = io.BytesIO(data)
+        except Exception as e:
+            logging.exception("Failed reading file-like audio object")
 
-    spoken_text = transcription.text
-    st.success(f"🗣 Recognized Speech: {spoken_text}")
+    # 3) If recorder returns a pydub.AudioSegment (has export method)
+    elif hasattr(audio, "export") and callable(getattr(audio, "export")):
+        try:
+            wav_bytes = io.BytesIO()
+            # export into in-memory buffer as WAV
+            audio.export(wav_bytes, format="wav")
+            wav_bytes.seek(0)
+        except Exception as e:
+            logging.exception("Failed exporting pydub AudioSegment")
 
-    # Fill input box automatically
-    st.session_state["lang_input"] = spoken_text
+    # 4) Last-resort: try to coerce iterables (list of ints/bytes) into bytes
+    else:
+        try:
+            wav_bytes = io.BytesIO(bytes(audio))
+        except Exception:
+            logging.exception("Unsupported audio type; cannot coerce to bytes")
+            st.error("Unsupported audio object returned by audiorecorder. Check logs for details.")
+            wav_bytes = None
+
+    if wav_bytes is None:
+        st.error("Could not process recording. See app logs for debugging details.")
+    else:
+        # Playback for user
+        wav_bytes.seek(0)
+        st.audio(wav_bytes, format="audio/wav")
+
+        # Prepare file tuple for OpenAI Whisper (filename, fileobj, mime)
+        wav_bytes.seek(0)
+        file_tuple = ("audio.wav", wav_bytes, "audio/wav")
+
+        # Call Whisper (OpenAI client - adjust if your client API differs)
+        try:
+            transcription = client.audio.transcriptions.create(
+                model="whisper-1",
+                file=file_tuple,
+                language=lang[:2].lower()
+            )
+            spoken_text = transcription.text
+            st.success(f"🗣 Recognized Speech: {spoken_text}")
+
+            # auto-fill the text area
+            st.session_state["lang_input"] = spoken_text
+
+        except Exception as e:
+            logging.exception("Whisper transcription failed")
+            st.error("Speech-to-text failed. Check logs for details.")
+
 
 
 # === MAIN LANGUAGE PRACTICE === #
