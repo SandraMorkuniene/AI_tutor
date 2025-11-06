@@ -8,6 +8,8 @@ from openai import OpenAI
 from audiorecorder import audiorecorder
 from pydub import AudioSegment
 import logging
+import numpy as np
+from scipy.io.wavfile import write as write_wav
 
 # Initialize OpenAI client
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
@@ -28,10 +30,6 @@ if "helper_conversation" not in st.session_state:
 
 st.subheader(f"✍️ Practice {lang}")
 
-from audiorecorder import audiorecorder
-import numpy as np
-import io
-from scipy.io.wavfile import write as write_wav
 
 st.subheader("🎤 Optional: Speak Instead of Typing")
 audio = audiorecorder("🎙️ Start recording", "⏹️ Stop recording")
