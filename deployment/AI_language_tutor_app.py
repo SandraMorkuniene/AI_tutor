@@ -73,11 +73,17 @@ if st.button("Submit", key="lang_submit"):
         st.markdown("### 🧠 AI Feedback and Response:")
         st.write(feedback)
 
-        # TEXT-TO-SPEECH: Generate & play
-        tts = gTTS(text=feedback, lang=lang[:2].lower())
-        tts.save("response.mp3")
-        audio_file = open("response.mp3", "rb")
-        st.audio(audio_file.read(), format="audio/mp3")
+       # TEXT-TO-SPEECH using OpenAI
+        speech = client.audio.speech.create(
+            model="gpt-4o-mini-tts",
+            voice="alloy",
+            input=feedback  # AI response
+        )
+
+        audio_bytes = speech.read()
+        
+        st.audio(audio_bytes, format="audio/mp3")
+
 
 # === HELPER CHATBOT IN ENGLISH === #
 st.subheader("💡 Ask a question in English (Grammar, Vocabulary, etc.)")
