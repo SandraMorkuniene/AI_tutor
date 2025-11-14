@@ -6,6 +6,7 @@ import os
 from gtts import gTTS
 from openai import OpenAI
 import logging
+import datetime
 
 
 # Initialize OpenAI client
@@ -133,7 +134,12 @@ st.sidebar.subheader("English Helper Q&A")
 for entry in st.session_state.helper_conversation:
     st.sidebar.markdown(f"🧑‍🏫 **Q:** {entry['user']}")
     st.sidebar.markdown(f"🤖 **A:** {entry['ai']}")
-
+    
+# Helper function for timestamped filenames
+def timestamped_filename(base):
+    ts = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    return f"{base}_{ts}.xlsx"
+    
 # === Downloads === #
 if st.sidebar.button("Download Conversation (Excel)"):
     df = pd.DataFrame(st.session_state.conversation)
@@ -152,7 +158,7 @@ if st.sidebar.button("Download Conversation (Text)"):
     st.sidebar.download_button(
         label="📥 Download Text File",
         data=text_history,
-        file_name="conversation_history.txt",
+        file_name=f"conversation_history_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt",
         mime="text/plain"
     )
 # === DOWNLOAD HELPER NOTES === #
@@ -169,8 +175,8 @@ if st.sidebar.button("Download Helper Notes (Excel)"):
         towrite.seek(0)
         st.sidebar.download_button(
             label="📘 Download Helper Notes Excel",
-            data=totime,
-            file_name="helper_notes.xlsx",
+            data=towrite,
+            file_name=f"helper_notes_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
@@ -186,7 +192,7 @@ if st.sidebar.button("Download Helper Notes (Text)"):
         st.sidebar.download_button(
             label="📄 Download Helper Notes Text",
             data=helper_text,
-            file_name="helper_notes.txt",
+            file_name=f"helper_notes_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt",
             mime="text/plain"
         )
 
