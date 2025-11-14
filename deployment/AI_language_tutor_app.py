@@ -111,6 +111,13 @@ if st.button("Ask Helper", key="helper_submit"):
 
         st.markdown("### 📘 Explanation:")
         st.markdown(feedback)
+        
+        # Helper TTS
+        try:
+            helper_tts = client.audio.speech.create(model="gpt-4o-mini-tts", voice="alloy", input=helper_feedback)
+            st.audio(helper_tts.read(), format="audio/mp3")
+        except Exception:
+            st.warning("Helper voice unavailable for this response.")
 
 # === SIDEBAR === #
 st.sidebar.title("📜 Conversation History")
@@ -136,7 +143,7 @@ if st.sidebar.button("Download Conversation (Excel)"):
     st.sidebar.download_button(
         label="📥 Download Excel File",
         data=towrite,
-        file_name="conversation_history.xlsx",
+        file_name=timestamped_filename("conversation_history"),
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
