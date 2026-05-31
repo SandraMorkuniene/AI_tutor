@@ -20,10 +20,11 @@ LANGUAGE_CODES = {
     "Romanian": "ro",
     "Spanish": "es",
     "Portuguese": "pt",
+    "German": "de",
     "Russian": "ru",
     "Polish": "pl"
 }
-lang = st.selectbox("Choose a language to practice:", ["French", "Italian", "Spanish", "Portuguese", "Romanian", "Polish", "Russian"])
+lang = st.selectbox("Choose a language to practice:", ["French", "Italian", "Spanish", "Portuguese", "German", "Romanian", "Polish", "Russian"])
 
 # Sidebar: model selection
 st.sidebar.markdown("### ⚙️ Helper Model Settings")
