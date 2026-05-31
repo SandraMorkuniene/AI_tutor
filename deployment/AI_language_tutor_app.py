@@ -14,7 +14,7 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 # App title and language selection
 st.title("🌍 AI Language Learning App")
-lang = st.selectbox("Choose a language to practice:", ["French", "Italian", "Romanian"])
+lang = st.selectbox("Choose a language to practice:", ["French", "Italian", "Spanish", "Portuguese", "Romanian"])
 
 # Sidebar: model selection
 st.sidebar.markdown("### ⚙️ Helper Model Settings")
