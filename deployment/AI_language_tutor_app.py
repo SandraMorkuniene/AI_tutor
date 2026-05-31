@@ -14,7 +14,16 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 # App title and language selection
 st.title("🌍 AI Language Learning App")
-lang = st.selectbox("Choose a language to practice:", ["French", "Italian", "Spanish", "Portuguese", "Romanian"])
+LANGUAGE_CODES = {
+    "French": "fr",
+    "Italian": "it",
+    "Romanian": "ro",
+    "Spanish": "es",
+    "Portuguese": "pt",
+    "Russian": "ru",
+    "Polish": "pl"
+}
+lang = st.selectbox("Choose a language to practice:", ["French", "Italian", "Spanish", "Portuguese", "Romanian", "Polish", "Russian"])
 
 # Sidebar: model selection
 st.sidebar.markdown("### ⚙️ Helper Model Settings")
@@ -39,7 +48,7 @@ if audio_file is not None:
     transcription = client.audio.transcriptions.create(
         model="whisper-1",
         file=audio_file,
-        language=lang[:2].lower()
+        language=LANGUAGE_CODES[lang]
     )
 
     spoken_text = transcription.text.strip()
